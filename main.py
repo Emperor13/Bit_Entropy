@@ -6,6 +6,8 @@ from PIL import Image, ImageTk
 from embit.descriptor import Descriptor
 from embit.networks import NETWORKS
 from embit import bip39, bip32
+from embit import ec
+import hashlib
 from binascii import hexlify
 import tkinter as tk
 import subprocess
@@ -14,6 +16,8 @@ import json
 import os
 import keyGen
 import recovery
+import non_bip32
+
 # ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── #
 root = Tk()
 root.title("Bit Entropy")  # CFD9ED
@@ -31,7 +35,7 @@ bgcolor = "#98A8F8"
 fontcolor = '#272323'
 mainbg = '#A4BDF7'
 seedbg = '#FAF7F0'
-
+textBoxColor = '#D9D9D9'
 root.configure(background=mainbg)  # กำหนดสีของพื้นหลัง
 # ────────────────────────────────────import image for status────────────────────────────────────────────────────── #
 onImage = PhotoImage(file=r'resources/status_on.png')
@@ -86,25 +90,143 @@ recoveryImage1 = r'resources\buttons\wallet_menu\recovery.png'
 recoveryImage2 = r'resources\buttons\wallet_menu\recovery2.png'
 masterImage1 = r'resources\buttons\wallet_menu\master.png'
 masterImage2 = r'resources\buttons\wallet_menu\master2.png'
+homeImage1 = r'resources\buttons\home1.png'
+homeImage2 = r'resources\buttons\home2.png'
+
+
+# ────────────────────────────────────import image for backgrounds────────────────────────────────────────────────────── #
+textboxImage = PhotoImage(file=r'resources\text\textbox.png')
+textboxImage2 = PhotoImage(file=r'resources\text\textbox2.png')
 pointerImage = PhotoImage(file=r'resources/pointer.png')
 writeDownImage = PhotoImage(file=r'resources/confirm.png')
 conSeedImage = PhotoImage(
     file=r'resources/background/mnemonic/confirmseed.png')
 nextImage = PhotoImage(file=r'resources/buttons/next.png')
 settingImage = PhotoImage(file=r'resources\settings.png')
-setting = Button(root, image=settingImage, border=0,
-                 bg=mainbg, activebackground=mainbg)
-setting.place(x=916, y=17)
-
-homeImage1 = r'resources\buttons\home1.png'
-homeImage2 = r'resources\buttons\home2.png'
-
-
-# ────────────────────────────────────import image for backgrounds────────────────────────────────────────────────────── #
 bgImage = PhotoImage(file=r'resources/background/first_page.png')
 menuImage = PhotoImage(file=r'resources/background/menu1.png')
 menuImage2 = PhotoImage(file=r'resources/background/menu2.png')
-# ───────────────────────────────|Close Functions|───────────────────────────────────────── #
+submitImage = PhotoImage(file=r'resources\buttons\MultiSig\Submit.png')
+recoveImg = PhotoImage(
+    file=r'resources\background\Recovery_Phrase\Group 44.png')
+importImg = PhotoImage(file=r'resources\buttons\import.png')
+copyImage = PhotoImage(file=r'resources\text\copy.png')
+
+recoveryBg = Label(root, image=recoveImg, bd=0, bg=mainbg)
+p2pkhbox = Label(root, image=textboxImage, bd=0, bg=seedbg)
+p2pkhbox2 = Label(root, image=textboxImage, bd=0, bg=seedbg)
+p2pkhbox3 = Label(root, image=textboxImage, bd=0, bg=seedbg)
+p2wpkhbox = Label(root, image=textboxImage, bd=0, bg=seedbg)
+p2wpkhbox2 = Label(root, image=textboxImage, bd=0, bg=seedbg)
+p2wpkhbox3 = Label(root, image=textboxImage, bd=0, bg=seedbg)
+p2trbox = Label(root, image=textboxImage, bd=0, bg=seedbg)
+p2trbox2 = Label(root, image=textboxImage, bd=0, bg=seedbg)
+p2trbox3 = Label(root, image=textboxImage, bd=0, bg=seedbg)
+pubkeybox = Label(root, image=textboxImage2, bd=0, bg=seedbg)
+pubkeybox2 = Label(root, image=textboxImage2, bd=0, bg=seedbg)
+pubkeybox3 = Label(root, image=textboxImage2, bd=0, bg=seedbg)
+prikeybox = Label(root, image=textboxImage2, bd=0, bg=seedbg)
+prikeybox2 = Label(root, image=textboxImage2, bd=0, bg=seedbg)
+prikeybox3 = Label(root, image=textboxImage2, bd=0, bg=seedbg)
+
+non_prikeybox = Label(root, image=textboxImage2, bd=0, bg=seedbg)
+non_pubkeybox = Label(root, image=textboxImage2, bd=0, bg=seedbg)
+
+setting = Button(root, image=settingImage, border=0,
+                 bg=mainbg, activebackground=mainbg)
+
+copy_p2pkh = Button(root, image=copyImage, bd=0, bg=seedbg,
+                    activebackground=seedbg)
+copy_p2pkh2 = Button(root, image=copyImage, bd=0, bg=seedbg,
+                     activebackground=seedbg)
+copy_p2pkh3 = Button(root, image=copyImage, bd=0, bg=seedbg,
+                     activebackground=seedbg)
+copy_p2wpkh = Button(root, image=copyImage, bd=0, bg=seedbg,
+                     activebackground=seedbg)
+copy_p2wpkh2 = Button(root, image=copyImage, bd=0, bg=seedbg,
+                      activebackground=seedbg)
+copy_p2wpkh3 = Button(root, image=copyImage, bd=0, bg=seedbg,
+                      activebackground=seedbg)
+copy_p2tr = Button(root, image=copyImage, bd=0, bg=seedbg,
+                   activebackground=seedbg)
+copy_p2tr2 = Button(root, image=copyImage, bd=0, bg=seedbg,
+                    activebackground=seedbg)
+copy_p2tr3 = Button(root, image=copyImage, bd=0, bg=seedbg,
+                    activebackground=seedbg)
+copy_pubkey = Button(root, image=copyImage, bd=0, bg=seedbg,
+                     activebackground=seedbg)
+copy_pubkey2 = Button(root, image=copyImage, bd=0, bg=seedbg,
+                      activebackground=seedbg)
+copy_pubkey3 = Button(root, image=copyImage, bd=0, bg=seedbg,
+                      activebackground=seedbg)
+copy_prvkey = Button(root, image=copyImage, bd=0, bg=seedbg,
+                     activebackground=seedbg)
+copy_prvkey2 = Button(root, image=copyImage, bd=0, bg=seedbg,
+                      activebackground=seedbg)
+copy_prvkey3 = Button(root, image=copyImage, bd=0, bg=seedbg,
+                      activebackground=seedbg)
+
+copy_non_prvkey = Button(root, image=copyImage, bd=0, bg=seedbg,
+                      activebackground=seedbg)
+copy_non_pubkey = Button(root, image=copyImage, bd=0, bg=seedbg,
+                      activebackground=seedbg)
+
+importBtn = Button(root, image=importImg, bd=0,
+                   bg=seedbg, activebackground=seedbg)
+
+
+recovery_text = Text(root, border=0, bg=minibg, font=(
+    'Grandstander', 14), padx=10, pady=10, fg=fontcolor, wrap=WORD)
+generated = Text(root, border=0, bg=minibg, font=(
+    'Grandstander', 14), padx=10, pady=10, fg=fontcolor, wrap=WORD)
+input_text = Text(root, border=0, bg=minibg, font=(
+    'Grandstander', 14), padx=10, pady=10, fg=fontcolor, wrap=WORD)
+p2pkhTextBox = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+p2pkhTextBox2 = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+p2pkhTextBox3 = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+
+p2wpkhTextBox = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+p2wpkhTextBox2 = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+p2wpkhTextBox3 = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+
+p2trTextBox = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+p2trTextBox2 = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+p2trTextBox3 = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+
+pubkeyTextBox = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+pubkeyTextBox2 = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+pubkeyTextBox3 = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+
+prvkeyTextBox = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+prvkeyTextBox2 = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+prvkeyTextBox3 = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+
+rand_prvkey = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+rand_pubkey = Text(root, border=0, bg=textBoxColor, font=(
+    'Grandstander', 9), fg=fontcolor)
+
+homeImage = PhotoImage(file=r'resources\background\home.png')
+homebg = Label(root, image=homeImage, bd=0, bg=mainbg)
+
+# ───────────────────────────────|place|───────────────────────────────────────── #
+
+setting.place(x=916, y=17)
 
 
 def close_menu():
@@ -156,10 +278,6 @@ def key_align():
 
     # generated.tag_add("center", 1.0, "end")
 # ──────────────────────────────────────Generating Key──────────────────────────────────────────────────── #
-generated = Text(root, border=0, bg=minibg, font=(
-    'Grandstander', 14), padx=10, pady=10, fg=fontcolor, wrap=WORD)
-input_text = Text(root, border=0, bg=minibg, font=(
-    'Grandstander', 14), padx=10, pady=10, fg=fontcolor, wrap=WORD)
 
 
 def generated_key(key):
@@ -176,8 +294,6 @@ def generated_key(key):
             count = 0
 
 
-# seed = ''
-# seed_list = seed.split(' ')
 rseed = []
 rawseed = ''
 
@@ -188,17 +304,17 @@ def select_key(num):
         key12 = keyGen.key12()
         rseed.append(key12)
         rawseed = rseed[0]
-        print("This is raw!",rawseed)
+        print("This is raw!", rawseed)
         print("this is key12: ", key12)
         seed = key12.split(' ')
         print(seed)
         generated_key(key12)
         mnemonic12.place(x=358, y=94)
-        pointer.place(x=299,y=223)
+        pointer.place(x=299, y=223)
         place_generated_key()
         writeDown.place(x=452, y=391)
         key_align()
-  
+
         close_menu()
         generated.bind('<Control-c>', lambda _: 'break')
     elif num == 15:
@@ -209,7 +325,7 @@ def select_key(num):
         seed = key15.split(' ')
         generated_key(key15)
         mnemonic15.place(x=358, y=94)
-        pointer.place(x=299,y=223)
+        pointer.place(x=299, y=223)
         place_generated_key()
         writeDown.place(x=452, y=391)
         key_align()
@@ -224,7 +340,7 @@ def select_key(num):
         seed = key18.split(' ')
         generated_key(key18)
         mnemonic18.place(x=358, y=94)
-        pointer.place(x=299,y=223)
+        pointer.place(x=299, y=223)
         place_generated_key()
         writeDown.place(x=452, y=391)
         key_align()
@@ -239,7 +355,7 @@ def select_key(num):
         seed = key21.split(' ')
         generated_key(key21)
         mnemonic21.place(x=358, y=94)
-        pointer.place(x=299,y=223)
+        pointer.place(x=299, y=223)
         place_generated_key()
         writeDown.place(x=452, y=391)
         key_align()
@@ -254,11 +370,11 @@ def select_key(num):
         seed = key24.split(' ')
         generated_key(key24)
         mnemonic24.place(x=358, y=94)
-        pointer.place(x=299,y=223)
+        pointer.place(x=299, y=223)
         place_generated_key()
         writeDown.place(x=452, y=391)
         key_align()
-  
+
         close_menu()
         generated.bind('<Control-c>', lambda _: 'break')
 
@@ -272,21 +388,23 @@ def confirm_seed():
     next_button.place(x=530, y=404)
     close_mnemonic()
     writeDown.place_forget()
-    
 
 
-sub = False
+def recovery_phrase():
+    recoveryBg.place(x=367, y=90)
+    importBtn.place(x=526, y=392)
+    recovery_text.place(x=421, y=216,
+                        width=360, height=124)
+    close_wallet_buttons()
 
 
 def submit():  # Callback function for SUBMIT Button
-    global seed, count2, sub
-    text = generated.get('1.0', 'end-2c')
-    textSplit = text.split(' ')
+    global seed, count2
+    input_text.bind('<Control-v>', lambda _: 'break')
     print(seed)
     text_input = input_text.get('1.0', 'end-1c')
     text_input_list = text_input.split(' ')
     generated.place_forget()
-    input_text.bind('<Control-v>', lambda _: 'break')
     print(rawseed)
     if text_input_list.__eq__(seed):
         print("Yep!")
@@ -298,6 +416,9 @@ def submit():  # Callback function for SUBMIT Button
         p2pkh_from_seed(True)
         p2wpkh_from_seed(True)
         p2tr_from_seed(True)
+        master_pubkey(True)
+        master_prvkey(True)
+        
         home.place(x=64, y=169)
     elif text_input.__eq__(''):
         messagebox.showinfo("Error!", "Input cannot be empty!")
@@ -307,6 +428,8 @@ def submit():  # Callback function for SUBMIT Button
     writeDown.place_forget()
 
 
+submitButton = Button(root, image=submitImage, bd=0,
+                      bg=seedbg, activebackground=seedbg, command=submit)
 next_button = Button(root, image=nextImage, border=0,
                      bg=seedbg, activebackground=seedbg, command=submit)
 # ──────────────────────────────────────Status Check──────────────────────────────────────────────────── #
@@ -364,86 +487,29 @@ def close_Screen():
 
 # ────────────────────────────────────Balance Check────────────────────────────────────────────────────── #
 
-print(rawseed)
+
 def gtc(dtxt):
     root.clipboard_clear()
     root.clipboard_append(dtxt)
 
-def setformat_p2tr(masterkey):
+
+def setformat_p2tr(masterkey: str) -> str:
     Frist = masterkey[:13]
     Last = masterkey[-13:]
     result = Frist + "........." + Last
     return result
 
 
-textboxImage = PhotoImage(file=r'resources\text\textbox.png')
-p2pkhbox = Label(root, image=textboxImage, bd=0, bg=seedbg)
-p2pkhbox2 = Label(root, image=textboxImage, bd=0, bg=seedbg)
-p2pkhbox3 = Label(root, image=textboxImage, bd=0, bg=seedbg)
-
-p2wpkhbox = Label(root, image=textboxImage, bd=0, bg=seedbg)
-p2wpkhbox2 = Label(root, image=textboxImage, bd=0, bg=seedbg)
-p2wpkhbox3 = Label(root, image=textboxImage, bd=0, bg=seedbg)
-
-p2trbox = Label(root, image=textboxImage, bd=0, bg=seedbg)
-p2trbox2 = Label(root, image=textboxImage, bd=0, bg=seedbg)
-p2trbox3 = Label(root, image=textboxImage, bd=0, bg=seedbg)
-
-p2pkhTextBox = Text(root, border=0, bg='#D9D9D9', font=(
-    'Grandstander', 9), fg=fontcolor)
-p2pkhTextBox2 = Text(root, border=0, bg='#D9D9D9', font=(
-    'Grandstander', 9), fg=fontcolor)
-p2pkhTextBox3 = Text(root, border=0, bg='#D9D9D9', font=(
-    'Grandstander', 9), fg=fontcolor)
-
-p2wpkhTextBox = Text(root, border=0, bg='#D9D9D9', font=(
-    'Grandstander', 9), fg=fontcolor)
-p2wpkhTextBox2 = Text(root, border=0, bg='#D9D9D9', font=(
-    'Grandstander', 9), fg=fontcolor)
-p2wpkhTextBox3 = Text(root, border=0, bg='#D9D9D9', font=(
-    'Grandstander', 9), fg=fontcolor)
-
-p2trTextBox = Text(root, border=0, bg='#D9D9D9', font=(
-    'Grandstander', 9), fg=fontcolor)
-p2trTextBox2 = Text(root, border=0, bg='#D9D9D9', font=(
-    'Grandstander', 9), fg=fontcolor)
-p2trTextBox3 = Text(root, border=0, bg='#D9D9D9', font=(
-    'Grandstander', 9), fg=fontcolor)
-
-copyImage = PhotoImage(file=r'resources\text\copy.png')
-
-copy_p2pkh = Button(root, image=copyImage, bd=0, bg=seedbg,
-                        activebackground=seedbg)
-copy_p2pkh2 = Button(root, image=copyImage, bd=0, bg=seedbg,
-                        activebackground=seedbg)
-copy_p2pkh3 = Button(root, image=copyImage, bd=0, bg=seedbg,
-                        activebackground=seedbg)
-
-copy_p2wpkh = Button(root, image=copyImage, bd=0, bg=seedbg,
-                        activebackground=seedbg)
-copy_p2wpkh2 = Button(root, image=copyImage, bd=0, bg=seedbg,
-                        activebackground=seedbg)
-copy_p2wpkh3 = Button(root, image=copyImage, bd=0, bg=seedbg,
-                        activebackground=seedbg)
-
-copy_p2tr = Button(root, image=copyImage, bd=0, bg=seedbg,
-                        activebackground=seedbg)
-copy_p2tr2 = Button(root, image=copyImage, bd=0, bg=seedbg,
-                        activebackground=seedbg)
-copy_p2tr3 = Button(root, image=copyImage, bd=0, bg=seedbg,
-                        activebackground=seedbg)
-
 def p2pkh_from_seed(ch):
     if ch == True:
-        
+
         p2pkh = recovery.recovery_from_seed(rawseed, 0)
         print(p2pkh)
         list1 = []
-        p2pkhbox.lower()
 
         for i in p2pkh:
-            format = setformat_p2tr(i)
-            list1.append(format)
+            # format = setformat_p2tr(i)
+            list1.append(i)
 
         p2pkhTextBox.insert(INSERT, list1[0])
         p2pkhTextBox.config(state='disabled')
@@ -453,12 +519,13 @@ def p2pkh_from_seed(ch):
 
         p2pkhTextBox3.insert(INSERT, list1[2])
         p2pkhTextBox3.config(state='disabled')
-        
-        copy_p2pkh.config(command= lambda: gtc(p2pkh[0]))
-        copy_p2pkh2.config(command= lambda: gtc(p2pkh[1]))
-        copy_p2pkh3.config(command= lambda: gtc(p2pkh[2]))
-    else: 
-        print("FAIL!!!")
+
+        copy_p2pkh.config(command=lambda: gtc(p2pkh[0]))
+        copy_p2pkh2.config(command=lambda: gtc(p2pkh[1]))
+        copy_p2pkh3.config(command=lambda: gtc(p2pkh[2]))
+    else:
+        print("P2PKH FAIL!!!")
+
 
 def p2wpkh_from_seed(ch):
     if ch == True:
@@ -466,11 +533,10 @@ def p2wpkh_from_seed(ch):
         p2wpkh = recovery.recovery_from_seed(rawseed, 1)
         print(p2wpkh)
         list1 = []
-        p2wpkhbox.lower()
 
         for i in p2wpkh:
-            format = setformat_p2tr(i)
-            list1.append(format)
+            # format = setformat_p2tr(i)
+            list1.append(i)
 
         p2wpkhTextBox.insert(INSERT, list1[0])
         p2wpkhTextBox.config(state='disabled')
@@ -480,12 +546,13 @@ def p2wpkh_from_seed(ch):
 
         p2wpkhTextBox3.insert(INSERT, list1[2])
         p2wpkhTextBox3.config(state='disabled')
-        
-        copy_p2wpkh.config(command= lambda: gtc(p2wpkh[0]))
-        copy_p2wpkh2.config(command= lambda: gtc(p2wpkh[1]))
-        copy_p2wpkh3.config(command= lambda: gtc(p2wpkh[2]))
-    else: 
-        print("FAIL!!!")
+
+        copy_p2wpkh.config(command=lambda: gtc(p2wpkh[0]))
+        copy_p2wpkh2.config(command=lambda: gtc(p2wpkh[1]))
+        copy_p2wpkh3.config(command=lambda: gtc(p2wpkh[2]))
+    else:
+        print("P2WPKH FAIL!!!")
+
 
 def p2tr_from_seed(ch):
     if ch == True:
@@ -493,7 +560,6 @@ def p2tr_from_seed(ch):
         p2tr = recovery.recovery_from_seed(rawseed, 2)
         print(p2tr)
         list1 = []
-        p2trbox.lower()
 
         for i in p2tr:
             format = setformat_p2tr(i)
@@ -507,13 +573,101 @@ def p2tr_from_seed(ch):
 
         p2trTextBox3.insert(INSERT, list1[2])
         p2trTextBox3.config(state='disabled')
-        
-        copy_p2tr.config(command= lambda: gtc(p2tr[0]))
-        copy_p2tr2.config(command= lambda: gtc(p2tr[1]))
-        copy_p2tr3.config(command= lambda: gtc(p2tr[2]))
-    else: 
-        print("FAIL!!!")
 
+        copy_p2tr.config(command=lambda: gtc(p2tr[0]))
+        copy_p2tr2.config(command=lambda: gtc(p2tr[1]))
+        copy_p2tr3.config(command=lambda: gtc(p2tr[2]))
+    else:
+        print("P2TR FAIL!!!")
+
+
+def master_pubkey(ch):
+    if ch == True:
+        pubkey = recovery.create_masterkey_from_seed(rawseed)
+        print(pubkey)
+        x = str(pubkey[1][0])
+        z = str(pubkey[1][1])
+        y = str(pubkey[1][2])
+
+        xpub = setformat_p2tr(x)
+        zpub = setformat_p2tr(z)
+        ypub = setformat_p2tr(y)
+
+        pubkeyTextBox.insert(INSERT, xpub)
+        pubkeyTextBox.config(state='disabled')
+
+        pubkeyTextBox2.insert(INSERT, zpub)
+        pubkeyTextBox2.config(state='disabled')
+
+        pubkeyTextBox3.insert(INSERT, ypub)
+        pubkeyTextBox3.config(state='disabled')
+
+        copy_pubkey.config(command=lambda: gtc(x))
+        copy_pubkey2.config(command=lambda: gtc(z))
+        copy_pubkey3.config(command=lambda: gtc(y))
+    else:
+        print("Fail!!")
+
+
+def master_prvkey(ch):
+    if ch == True:
+        prvkey = recovery.create_masterkey_from_seed(rawseed)
+        print(prvkey)
+        x = str(prvkey[0][0])
+        z = str(prvkey[0][1])
+        y = str(prvkey[0][2])
+
+        xprv = setformat_p2tr(x)
+        zprv = setformat_p2tr(z)
+        yprv = setformat_p2tr(y)
+
+        prvkeyTextBox.insert(INSERT, xprv)
+        prvkeyTextBox.config(state='disabled')
+
+        prvkeyTextBox2.insert(INSERT, zprv)
+        prvkeyTextBox2.config(state='disabled')
+
+        prvkeyTextBox3.insert(INSERT, yprv)
+        prvkeyTextBox3.config(state='disabled')
+
+        copy_prvkey.config(command=lambda: gtc(x))
+        copy_prvkey2.config(command=lambda: gtc(z))
+        copy_prvkey3.config(command=lambda: gtc(y))
+    else:
+        print("Fail!!")
+randImg = PhotoImage(file=r'resources\buttons\random.png')
+
+def rand_non_bip32(ch):
+
+    if ch == True:
+        Entropy = non_bip32.random_entropy()
+        wif = non_bip32.create_wif(Entropy)
+        print("Private Key: ", wif)
+        prv = ec.PrivateKey.from_wif(wif)
+        pub = prv.get_public_key()
+        print('Public Key: %s' % pub,'\n')
+
+        rand_prv = setformat_p2tr(str(prv))
+        rand_pub = setformat_p2tr(str(pub))
+
+        rand_prvkey.insert(INSERT, rand_prv)
+        rand_prvkey.config(state='disabled')
+
+        rand_pubkey.insert(INSERT, rand_pub)
+        rand_pubkey.config(state='disabled')
+
+        copy_non_prvkey.config(command=lambda: gtc(prv))
+        copy_non_pubkey.config(command=lambda: gtc(pub))
+    else:
+        rand_prvkey.config(state='NORMAL')
+        rand_pubkey.config(state='NORMAL')
+
+        rand_prvkey.delete('1.0', END)
+        rand_pubkey.delete('1.0', END)
+        print("Fail!!")
+
+
+rand_button = Button(root, image=randImg, bd=0, bg=seedbg, activebackground=seedbg,command=lambda: rand_non_bip32(True))
 # ─────────────────────────────────Hovering Effect───────────────────────────────────────────────────────── #
 class Btn(Button):
     def __init__(self, root, img1, img2, *args, **kwargs):
@@ -535,6 +689,26 @@ class Btn(Button):
 # ────────────────────────────────────Open Menu────────────────────────────────────────────────────── #
 
 
+def wallet_menu():
+    pointer.place(x=312, y=228)
+    menu.place(x=363, y=151)
+    newwallet_button.place(x=385, y=196)
+    recovery_button.place(x=385, y=292)
+    master_button.place(x=385, y=388)
+    recoveryBg.place_forget()
+    recovery_text.place_forget()
+    importBtn.place_forget()
+    submitButton.place_forget()
+    confirm.place_forget()
+    close_menu()
+    close_mnemonic()
+    close_home()
+    generated.place_forget()
+    next_button.place_forget()
+    writeDown.place_forget()
+    input_text.place_forget()
+
+
 def open_menu_wallet():
     global count1, count2
     count1 = count1 + 1
@@ -546,30 +720,56 @@ def open_menu_wallet():
     if count1 == 1:
         generated.config(state=NORMAL)
         generated.delete("1.0", END)
-        pointer.place(x=312, y=228)
-        menu.place(x=363, y=151)
-        newwallet_button.place(x=385, y=196)
-        recovery_button.place(x=385, y=292)
-        master_button.place(x=385, y=388)
-        confirm.place_forget()
-        close_menu()
-        close_mnemonic()
-        close_home()
-        generated.place_forget()
-        next_button.place_forget()
-        writeDown.place_forget()
-        input_text.place_forget()
+        wallet_menu()
         count2 = 0
     else:
         pointer.place_forget()
         close_wallet_buttons()
 
 
+def clear_seed():
+    p2pkhTextBox.config(state='normal')
+    p2pkhTextBox2.config(state='normal')
+    p2pkhTextBox3.config(state='normal')
+    p2wpkhTextBox.config(state='normal')
+    p2wpkhTextBox2.config(state='normal')
+    p2wpkhTextBox3.config(state='normal')
+    p2trTextBox.config(state='normal')
+    p2trTextBox2.config(state='normal')
+    p2trTextBox3.config(state='normal')
+    pubkeyTextBox.config(state='normal')
+    pubkeyTextBox2.config(state='normal')
+    pubkeyTextBox3.config(state='normal')
+    prvkeyTextBox.config(state='normal')
+    prvkeyTextBox2.config(state='normal')
+    prvkeyTextBox3.config(state='normal')
+
+    p2pkhTextBox.delete('1.0', END)
+    p2pkhTextBox2.delete('1.0', END)
+    p2pkhTextBox3.delete('1.0', END)
+    p2wpkhTextBox.delete('1.0', END)
+    p2wpkhTextBox2.delete('1.0', END)
+    p2wpkhTextBox3.delete('1.0', END)
+    p2trTextBox.delete('1.0', END)
+    p2trTextBox2.delete('1.0', END)
+    p2trTextBox3.delete('1.0', END)
+    pubkeyTextBox.delete('1.0', END)
+    pubkeyTextBox2.delete('1.0', END)
+    pubkeyTextBox3.delete('1.0', END)
+    prvkeyTextBox.delete('1.0', END)
+    prvkeyTextBox2.delete('1.0', END)
+    prvkeyTextBox3.delete('1.0', END)
+
+
 def open_generated_wallet():
-    global count2, count1
+    global count2, count1, rseed
     count2 = count2 + 1
     # print("multiSig",count2)
     # print("wallet", count1)
+    if len(rseed) != 0:
+        rseed.clear()
+        clear_seed()
+        print("Clear!!")
     if count2 > 1:
         count2 = 0
     # count clicks 1 = open ,2 = close
@@ -580,16 +780,12 @@ def open_generated_wallet():
         place_buttons()
         close_wallet_buttons()
         count1 = 0
-
     else:
         close_menu()
 
 
 def close_home():
     homebg.place_forget()
-    p2pkh_label.place_forget()
-    p2wpkh_label.place_forget()
-    p2tr_label.place_forget()
 
     p2pkhbox.place_forget()
     p2pkhbox2.place_forget()
@@ -600,6 +796,12 @@ def close_home():
     p2trbox.place_forget()
     p2trbox2.place_forget()
     p2trbox3.place_forget()
+    pubkeybox.place_forget()
+    pubkeybox2.place_forget()
+    pubkeybox3.place_forget()
+    prikeybox.place_forget()
+    prikeybox2.place_forget()
+    prikeybox3.place_forget()
 
     p2pkhTextBox.place_forget()
     p2pkhTextBox2.place_forget()
@@ -610,6 +812,12 @@ def close_home():
     p2trTextBox.place_forget()
     p2trTextBox2.place_forget()
     p2trTextBox3.place_forget()
+    pubkeyTextBox.place_forget()
+    pubkeyTextBox2.place_forget()
+    pubkeyTextBox3.place_forget()
+    prvkeyTextBox.place_forget()
+    prvkeyTextBox2.place_forget()
+    prvkeyTextBox3.place_forget()
 
     copy_p2pkh.place_forget()
     copy_p2pkh2.place_forget()
@@ -620,19 +828,85 @@ def close_home():
     copy_p2tr.place_forget()
     copy_p2tr2.place_forget()
     copy_p2tr3.place_forget()
+    copy_pubkey.place_forget()
+    copy_pubkey2.place_forget()
+    copy_pubkey3.place_forget()
+    copy_prvkey.place_forget()
+    copy_prvkey2.place_forget()
+    copy_prvkey3.place_forget()
 
 
-homeImage = PhotoImage(file=r'resources\background\home.png')
-homebg = Label(root, image=homeImage, bd=0, bg=mainbg)
+def home_menu():
+    homebg.lower()
+    homebg.place(x=361, y=82)
+    home.place(x=64, y=169)
 
-p2pkh_label = Label(root, text='Pay to Public key Hash (P2PKH)', font=(
-    'Grandstander', 13), bg=seedbg, bd=0)
+    p2pkhbox.place(x=381, y=144)
+    p2pkhbox2.place(x=381, y=177)
+    p2pkhbox3.place(x=381, y=208)
+    p2wpkhbox.place(x=381, y=269)
+    p2wpkhbox2.place(x=381, y=300)
+    p2wpkhbox3.place(x=381, y=334)
+    p2trbox.place(x=381, y=393)
+    p2trbox2.place(x=381, y=426)
+    p2trbox3.place(x=381, y=458)
+    pubkeybox.place(x=688, y=269)
+    pubkeybox2.place(x=688, y=300)
+    pubkeybox3.place(x=688, y=334)
+    prikeybox.place(x=688, y=144)
+    prikeybox2.place(x=688, y=177)
+    prikeybox3.place(x=688, y=208)
+    non_prikeybox.place(x=688, y=403)
+    non_pubkeybox.place(x=688, y=445)
 
-p2wpkh_label = Label(root, text='Pay to Witness Public Key Hash (P2WPKH)', font=(
-    'Grandstander', 13), bg=seedbg, bd=0)
+    p2pkhTextBox.place(x=388, y=147, width=235, height=18)
+    p2pkhTextBox2.place(x=388, y=180, width=235, height=18)
+    p2pkhTextBox3.place(x=388, y=211, width=235, height=18)
+    p2wpkhTextBox.place(x=388, y=272, width=235, height=18)
+    p2wpkhTextBox2.place(x=388, y=303, width=235, height=18)
+    p2wpkhTextBox3.place(x=388, y=337, width=235, height=18)
+    p2trTextBox.place(x=388, y=396, width=235, height=18)
+    p2trTextBox2.place(x=388, y=429, width=235, height=18)
+    p2trTextBox3.place(x=388, y=461, width=235, height=18)
+    pubkeyTextBox.place(x=694, y=272, width=218, height=18)
+    pubkeyTextBox2.place(x=694, y=303, width=218, height=18)
+    pubkeyTextBox3.place(x=694, y=337, width=218, height=18)
+    prvkeyTextBox.place(x=694, y=147, width=218, height=18)
+    prvkeyTextBox2.place(x=694, y=180, width=218, height=18)
+    prvkeyTextBox3.place(x=694, y=211, width=218, height=18)
+    rand_prvkey.place(x=694, y=406, width=218, height=18)
+    rand_pubkey.place(x=694, y=448, width=218, height=18)
 
-p2tr_label = Label(root, text='Pay to Taproot (P2TR)', font=(
-    'Grandstander', 13), bg=seedbg, bd=0)
+    copy_p2pkh.place(x=634, y=147)
+    copy_p2pkh2.place(x=634, y=180)
+    copy_p2pkh3.place(x=634, y=211)
+    copy_p2wpkh.place(x=634, y=272)
+    copy_p2wpkh2.place(x=634, y=303)
+    copy_p2wpkh3.place(x=634, y=337)
+    copy_p2tr.place(x=634, y=396)
+    copy_p2tr2.place(x=634, y=429)
+    copy_p2tr3.place(x=634, y=461)
+    copy_pubkey.place(x=919, y=272)
+    copy_pubkey2.place(x=919, y=303)
+    copy_pubkey3.place(x=919, y=337)
+    copy_prvkey.place(x=919, y=147)
+    copy_prvkey2.place(x=919, y=180)
+    copy_prvkey3.place(x=919, y=211)
+    copy_non_prvkey.place(x=919, y=406)
+    copy_non_pubkey.place(x=919, y=448)
+
+    rand_button.place(x=751, y=465)
+    submitButton.place_forget()
+    menu.place_forget()
+    pointer.place_forget()
+    confirm.place_forget()
+    close_menu()
+    close_wallet_buttons()
+    close_mnemonic()
+    generated.place_forget()
+    next_button.place_forget()
+    writeDown.place_forget()
+    input_text.place_forget()
 
 
 def open_home():
@@ -642,52 +916,7 @@ def open_home():
         count2 = 0
 
     if count2 == 1:
-        homebg.lower()
-        homebg.place(x=361, y=82)
-        home.place(x=64, y=169)
-        p2pkh_label.place(x=381, y=92)
-        p2wpkh_label.place(x=381, y=217)
-        p2tr_label.place(x=381, y=341)
-
-        p2pkhbox.place(x=381, y=123)
-        p2pkhbox2.place(x=381, y=156)
-        p2pkhbox3.place(x=381, y=187)
-        p2wpkhbox.place(x=381, y=248)
-        p2wpkhbox2.place(x=381, y=281)
-        p2wpkhbox3.place(x=381, y=313)
-        p2trbox.place(x=381, y=372)
-        p2trbox2.place(x=381, y=405)
-        p2trbox3.place(x=381, y=437)
-
-        p2pkhTextBox.place(x=388, y=126, width=239, height=18)
-        p2pkhTextBox2.place(x=388, y=159, width=239, height=18)
-        p2pkhTextBox3.place(x=388, y=190, width=239, height=18)
-        p2wpkhTextBox.place(x=388, y=251, width=239, height=18)
-        p2wpkhTextBox2.place(x=388, y=284, width=239, height=18)
-        p2wpkhTextBox3.place(x=388, y=316, width=239, height=18)
-        p2trTextBox.place(x=388, y=375, width=239, height=18)
-        p2trTextBox2.place(x=388, y=408, width=239, height=18)
-        p2trTextBox3.place(x=388, y=440, width=239, height=18)
-
-        copy_p2pkh.place(x=634, y=127)
-        copy_p2pkh2.place(x=634, y=160)
-        copy_p2pkh3.place(x=634, y=191)
-        copy_p2wpkh.place(x=634, y=252)
-        copy_p2wpkh2.place(x=634, y=285)
-        copy_p2wpkh3.place(x=634, y=317)
-        copy_p2tr.place(x=634, y=376)
-        copy_p2tr2.place(x=634, y=409)
-        copy_p2tr3.place(x=634, y=440)
-        menu.place_forget()
-        pointer.place_forget()
-        confirm.place_forget()
-        close_menu()
-        close_wallet_buttons()   
-        close_mnemonic()
-        generated.place_forget()
-        next_button.place_forget()
-        writeDown.place_forget()
-        input_text.place_forget()
+        home_menu()
         count1 = 0
     else:
         close_home()
@@ -741,7 +970,8 @@ broadcast_button.place(x=64, y=376)  # -- กำหนดตำแหน่ง
 newwallet_button = Btn(root, img1=newwalletImage1,
                        img2=newwalletImage2, command=lambda: open_generated_wallet())
 # Recovery button
-recovery_button = Btn(root, img1=recoveryImage1, img2=recoveryImage2)
+recovery_button = Btn(root, img1=recoveryImage1,
+                      img2=recoveryImage2, command=lambda: recovery_phrase())
 # Master key button
 master_button = Btn(root, img1=masterImage1, img2=masterImage2)
 # Loading Image
@@ -757,7 +987,7 @@ confirm.lower()
 # status checking
 status = tk.Label(root, text="Checking...", border=0, bg=mainbg,
                   activebackground=mainbg, font=('Grandstander', 14))
-#status.place(x=780, y=506)
+# status.place(x=780, y=506)
 
 home = Btn(root, img1=homeImage1, img2=homeImage2, command=lambda: open_home())
 
