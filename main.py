@@ -728,15 +728,15 @@ def master_pubkey(ch, seed):
         pubkeyTextBox.insert(INSERT, xpub)
         pubkeyTextBox.config(state='disabled')
 
-        pubkeyTextBox2.insert(INSERT, zpub)
+        pubkeyTextBox2.insert(INSERT, ypub)
         pubkeyTextBox2.config(state='disabled')
 
-        pubkeyTextBox3.insert(INSERT, ypub)
+        pubkeyTextBox3.insert(INSERT, zpub)
         pubkeyTextBox3.config(state='disabled')
 
         copy_pubkey.config(command=lambda: gtc(x))
-        copy_pubkey2.config(command=lambda: gtc(z))
-        copy_pubkey3.config(command=lambda: gtc(y))
+        copy_pubkey2.config(command=lambda: gtc(y))
+        copy_pubkey3.config(command=lambda: gtc(z))
     else:
         print("Fail!!")
 
@@ -757,15 +757,15 @@ def master_prvkey(ch, seed):
         prvkeyTextBox.insert(INSERT, xprv)
         prvkeyTextBox.config(state='disabled')
 
-        prvkeyTextBox2.insert(INSERT, zprv)
+        prvkeyTextBox2.insert(INSERT, yprv)
         prvkeyTextBox2.config(state='disabled')
 
-        prvkeyTextBox3.insert(INSERT, yprv)
+        prvkeyTextBox3.insert(INSERT, zprv)
         prvkeyTextBox3.config(state='disabled')
 
         copy_prvkey.config(command=lambda: gtc(x))
-        copy_prvkey2.config(command=lambda: gtc(z))
-        copy_prvkey3.config(command=lambda: gtc(y))
+        copy_prvkey2.config(command=lambda: gtc(y))
+        copy_prvkey3.config(command=lambda: gtc(z))
     else:
         print("Fail!!")
 
@@ -1117,16 +1117,16 @@ def check_type_master_key():
     global master_key
     master_key = master_key_input.get('1.0', 'end-1c')
     type = master_key[:4]
-
+    format_key = setformat_p2tr(str(master_key))
     if type == 'xpub':
-        pubkeyTextBox.insert(INSERT, master_key)
+        pubkeyTextBox.insert(INSERT, format_key)
         print('xpub')
-    elif type == 'zpub':
-        pubkeyTextBox2.insert(INSERT, master_key)
-        print('zpub')
     elif type == 'ypub':
-        pubkeyTextBox3.insert(INSERT, master_key)
+        pubkeyTextBox2.insert(INSERT, format_key)
         print('ypub')
+    elif type == 'zpub':
+        pubkeyTextBox3.insert(INSERT, format_key)
+        print('zpub')
     else:
         print('Master Publick Key incorrect!')
         
