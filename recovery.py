@@ -27,7 +27,6 @@ def recovery_from_master_Publickey(master_pubkey: str, type:int) -> str:
     seed = bip39.mnemonic_to_seed(mnemonic)
     root = bip32.HDKey.from_seed(seed, version=NETWORKS["main"]["zprv"])
 
-
     xpub = master_pubkey
     locking_script = ["pkh", "wpkh", "tr"]
     addr_type = locking_script[type]
@@ -40,12 +39,6 @@ def recovery_from_master_Publickey(master_pubkey: str, type:int) -> str:
     return store
 
 
-
-
-'''
-
-
-'''
 def recovery_from_seed(seed_phrase:str, type:int) -> str:
     mnemonic = seed_phrase
     seed = bip39.mnemonic_to_seed(mnemonic)
@@ -64,10 +57,6 @@ def recovery_from_seed(seed_phrase:str, type:int) -> str:
     return store
 
 
-
-
-
-
 def create_masterkey_from_seed(seed_phrase:str) -> str:
 
     mnemonic = seed_phrase
@@ -77,7 +66,6 @@ def create_masterkey_from_seed(seed_phrase:str) -> str:
     zprv = bip32.HDKey.from_seed(seed, version=NETWORKS["main"]["zprv"])
     yprv = bip32.HDKey.from_seed(seed, version=NETWORKS["main"]["yprv"])  # xprv, zprv, yprv
 
-
     xpub = xprv.derive("m/84h/0h/0h").to_public()
     zpub = zprv.derive("m/84h/0h/0h").to_public()
     ypub = yprv.derive("m/84h/0h/0h").to_public()
@@ -86,3 +74,4 @@ def create_masterkey_from_seed(seed_phrase:str) -> str:
     master_public_key = [xpub, zpub, ypub]
         
     return master_private_key, master_public_key
+
